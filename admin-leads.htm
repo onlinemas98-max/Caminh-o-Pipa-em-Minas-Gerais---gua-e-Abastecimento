@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Leads e Analytics</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .login-box, .admin-box {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            border-radius: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+        th {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+        }
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filters select {
+            max-width: 220px;
+        }
+        .hidden {
+            display: none;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo">Caminhão Pipa MG - Admin</a>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Ver Site</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="login-screen" class="login-box">
+            <h2>Painel Administrativo</h2>
+            <p>Insira a credencial de acesso ao painel:</p>
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="senha-input">Senha de Acesso</label>
+                <input type="password" id="senha-input" placeholder="Digite a senha">
+            </div>
+            <button id="btn-login" class="btn">Entrar</button>
+            <p id="login-error" style="color: red; margin-top: 10px; display: none;">Senha incorreta. Tente novamente.</p>
+            <p style="margin-top: 15px; font-size: 12px; color: #666;">Nota: Como o GitHub Pages é um host estático, esta interface utiliza validação básica de demonstração. Para segurança em produção, recomenda-se um serviço de autenticação externo.</p>
+        </div>
+
+        <div id="admin-panel" class="admin-box hidden">
+            <h2>Gerenciamento de Solicitações (Leads Locais)</h2>
+            <div class="info-box">
+                <p><strong>Nota Técnica sobre Hospedagem Estática:</strong> O GitHub Pages não possui banco de dados em servidor. Os leads listados abaixo referem-se ao armazenamento local (<code>localStorage</code>) do navegador atual. Para rastreamento centralizado de cliques em botões de WhatsApp, o projeto está configurado via Google Analytics 4 (GA4) disparando o evento <code>whatsapp_click</code>.</p>
+                <p>Consulte os relatórios completos de eventos e conversões diretamente no painel do seu <a href="https://analytics.google.com" target="_blank" style="color: var(--primary-color); font-weight: bold;">Google Analytics (GA4)</a> configurado com a propriedade <code>G-XXXXXXXXXX</code>.</p>
+            </div>
+
+            <div class="filters">
+                <div>
+                    <label for="filtro-cidade">Filtrar por Cidade:</label>
+                    <select id="filtro-cidade">
+                        <option value="">Todas as cidades</option>
+                        <option value="Bocaiúva">Bocaiúva</option>
+                        <option value="Curvelo">Curvelo</option>
+                        <option value="Francisco Sá">Francisco Sá</option>
+                        <option value="Janaúba">Janaúba</option>
+                        <option value="Januária">Januária</option>
+                        <option value="Montes Claros">Montes Claros</option>
+                        <option value="Pirapora">Pirapora</option>
+                        <option value="Salinas">Salinas</option>
+                        <option value="Taiobeiras">Taiobeiras</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filtro-status">Filtrar por Status:</label>
+                    <select id="filtro-status">
+                        <option value="">Todos os status</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Atendido">Atendido</option>
+                    </select>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Cidade</th>
+                        <th>Serviço</th>
+                        <th>Mensagem</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-leads">
+                </tbody>
+            </table>
+
+            <h2>Histórico Local de Cliques no WhatsApp (LocalStorage)</h2>
+            <p><small>Registro local complementar de cliques capturados neste navegador:</small></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cidade</th>
+                        <th>Local do Botão</th>
+                        <th>Texto do Botão</th>
+                        <th>Telefone</th>
+                        <th>Data/Horário</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-clicks">
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 25px;">
+                <button id="btn-limpar" class="btn" style="background-color: #d9534f;">Limpar Registros Locais</button>
+                <button id="btn-logout" class="btn" style="background-color: #666;">Sair</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const AUTH_HASH_SIM = "2504";
+
+        document.getElementById("btn-login").addEventListener("click", function() {
+            const senha = document.getElementById("senha-input").value;
+            if (senha === AUTH_HASH_SIM) {
+                document.getElementById("login-screen").classList.add("hidden");
+                document.getElementById("admin-panel").classList.remove("hidden");
+                carregarLeads();
+                carregarClicks();
+            } else {
+                document.getElementById("login-error").style.display = "block";
+            }
+        });
+
+        document.getElementById("btn-logout").addEventListener("click", function() {
+            document.getElementById("admin-panel").classList.add("hidden");
+            document.getElementById("login-screen").classList.remove("hidden");
+            document.getElementById("senha-input").value = "";
+        });
+
+        function carregarLeads() {
+            const tbody = document.getElementById("tabela-leads");
+            tbody.innerHTML = "";
+            const leads = JSON.parse(localStorage.getItem("admin_leads") || "[]");
+            
+            const filtroCidade = document.getElementById("filtro-cidade").value;
+            const filtroStatus = document.getElementById("filtro-status").value;
+
+            if (leads.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">Nenhum lead registrado localmente.</td></tr>`;
+                return;
+            }
+
+            leads.forEach((lead, index) => {
+                if (filtroCidade && lead.cidade !== filtroCidade) return;
+                if (filtroStatus && lead.status !== filtroStatus) return;
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${lead.nome}</td>
+                    <td>${lead.telefone}</td>
+                    <td>${lead.cidade}</td>
+                    <td>${lead.servico}</td>
+                    <td>${lead.mensagem || '-'}</td>
+                    <td>${lead.data}</td>
+                    <td>${lead.status}</td>
+                    <td>
+                        <button onclick="alternarStatus(${index})" class="btn" style="padding: 5px 8px; font-size: 11px;">Status</button>
+                        <button onclick="excluirLead(${index})" class="btn" style="padding: 5px 8px; font-size: 11px; background-color: #d9534f;">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function carregarClicks() {
+            const tbody = document.getElementById("tabela-clicks");
+            tbody.innerHTML = "";
+            const clicks = JSON.parse(localStorage.getItem("whatsapp_click_history") || "[]");
+            
+            if (clicks.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhum clique em WhatsApp registrado localmente.</td></tr>`;
+                return;
+            }
+
+            clicks.slice(-15).reverse().forEach(click => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${click.city}</td>
+                    <td>${click.button_location}</td>
+                    <td>${click.button_text}</td>
+                    <td>${click.phone}</td>
+                    <td>${new Date(click.date).toLocaleString('pt-BR')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById("filtro-cidade").addEventListener("change", carregarLeads);
+        document.getElementById("filtro-status").addEventListener("change", carregarLeads);
+
+        window.alternarStatus = function(index) {
+            const leads = JSON.parse(localStorage.getItem("admin_leads") || "[]");
+            leads[index].status = leads[index].status === "Pendente" ? "Atendido" : "Pendente";
+            localStorage.setItem("admin_leads", JSON.stringify(leads));
+            carregarLeads();
+        }
+
+        window.excluirLead = function(index) {
+            if (confirm("Deseja realmente excluir este pedido?")) {
+                let leads = JSON.parse(localStorage.getItem("admin_leads") || "[]");
+                leads.splice(index, 1);
+                localStorage.setItem("admin_leads", JSON.stringify(leads));
+                carregarLeads();
+            }
+        }
+
+        document.getElementById("btn-limpar").addEventListener("click", function() {
+            if (confirm("Tem certeza que deseja apagar todos os registros locais do navegador?")) {
+                localStorage.removeItem("admin_leads");
+                localStorage.removeItem("whatsapp_click_history");
+                carregarLeads();
+                carregarClicks();
+            }
+        });
+    </script>
+</body>
+</html>

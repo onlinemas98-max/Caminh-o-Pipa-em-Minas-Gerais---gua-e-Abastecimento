@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://caminhaopipamg.com.br/sitemap.xml
